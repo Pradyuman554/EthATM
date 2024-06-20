@@ -11,3 +11,6 @@ Displays account details and balance once connected.
 ### setWithdrawAmount() and setDepositAmount()
 Manages various states such as ethWallet, account, atm (contract instance), balance, withdrawAmount, depositAmount, and darkMode.
 The input fields allow users to enter numerical amounts for depositing and withdrawing Ether in an Ethereum ATM simulation. Each input field is associated with a state variable (depositAmount and withdrawAmount respectively) that tracks the value entered by the user. The onChange event handler updates these state variables whenever the user types or modifies the input. This ensures that the UI reflects the current input value in real-time. 
+
+### Directions:
+Please open pages/index.js for displaying the react code
