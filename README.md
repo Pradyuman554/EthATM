@@ -1,12 +1,31 @@
-# Starter Next/Hardhat Project
+# Pradyuman's ATM DApp
 
-After cloning the github, you will want to do the following to get the code running on your computer.
+Welcome to my Ethereum-based ATM DApp! This little project lets you deposit, withdraw, and transfer ETH using a smart contract. Plus, you can switch between light and dark mode for that sweet UI customization.
 
-1. Inside the project directory, in the terminal type: npm i
-2. Open two additional terminals in your VS code
-3. In the second terminal type: npx hardhat node
-4. In the third terminal, type: npx hardhat run --network localhost scripts/deploy.js
-5. Back in the first terminal, type npm run dev to launch the front-end.
+## What's Inside
 
-After this, the project will be running on your localhost. 
-Typically at http://localhost:3000/
+- **MetaMask Integration**: Connect your MetaMask wallet to use the app.
+- **Balance Check**: See how much ETH you have.
+- **Deposit**: Add some ETH to your balance.
+- **Withdraw**: Take some ETH out.
+- **Transfer**: Send ETH to your friends.
+- **Dark Mode**: Because who doesn't love dark mode?
+
+## How to Run It
+
+### What You Need
+
+- **Node.js**: Make sure you have it installed.
+- **MetaMask**: Get the extension on your browser.
+
+### Using the App
+Open it up in your browser.
+<br>
+Connect your MetaMask wallet. <br>
+Do your thing: Deposit, withdraw, transfer. <br>
+Switch the mode to dark or light using the button. <br>
+
+### Tech Stack <br>
+React: For the frontend. <br>
+Ethers.js: To interact with the Ethereum network. <br>
+MetaMask: For wallet integration. <br>
