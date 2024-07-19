@@ -7,13 +7,14 @@ export default function HomePage() {
   const [account, setAccount] = useState(undefined);
   const [atm, setATM] = useState(undefined);
   const [balance, setBalance] = useState(undefined);
-  const [networkID, setNetworkID] = useState(null); // Initialize networkID state
+  const [networkID, setNetworkID] = useState(null);
   const [recipientAddress, setRecipientAddress] = useState("");
   const [transferAmount, setTransferAmount] = useState("");
-
-  const [withdrawAmount, setWithdrawAmount] = useState(""); // State to store the withdraw
-  const [depositAmount, setDepositAmount] = useState(""); // State to store deposit amount
-  const [darkMode, setDarkMode] = useState(false); // Dark Mode, Light mode
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [depositAmount, setDepositAmount] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [transactionHistory, setTransactionHistory] = useState([]);
 
   const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
   const atmABI = atm_abi.abi;
@@ -31,10 +32,7 @@ export default function HomePage() {
 
   const handleAccount = (account) => {
     if (account) {
-      console.log("Account connected: ", account);
       setAccount(account);
-    } else {
-      console.log("No account found");
     }
   };
 
@@ -47,7 +45,6 @@ export default function HomePage() {
     const accounts = await ethWallet.request({ method: "eth_requestAccounts" });
     handleAccount(accounts);
 
-    // once wallet is set we can get a reference to our deployed contract
     getATMContract();
   };
 
@@ -67,65 +64,75 @@ export default function HomePage() {
 
   const deposit = async () => {
     if (atm && depositAmount !== "") {
-      const tx = await atm.deposit(depositAmount);
+      const tx = await atm.deposit(ethers.utils.parseEther(depositAmount));
       await tx.wait();
-      setDepositAmount(""); // Clear deposit amount after successful deposit
+      setDepositAmount("");
       getBalance();
+      getTransactionHistory();
     }
   };
 
   const withdraw = async () => {
     if (atm && withdrawAmount !== "") {
-      const tx = await atm.withdraw(withdrawAmount);
+      const tx = await atm.withdraw(ethers.utils.parseEther(withdrawAmount));
       await tx.wait();
-      setWithdrawAmount(""); // Clear withdrawal amount after successful withdrawal
+      setWithdrawAmount("");
       getBalance();
+      getTransactionHistory();
     }
   };
 
-  const checkNetworkId = async () => {
-    if (!ethWallet) {
-      console.error("Ethereum provider not found.");
-      return;
-    }
-
-    const provider = new ethers.providers.Web3Provider(ethWallet);
-    const network = await provider.getNetwork();
-    setNetworkID(network.chainId.toString());
-  };
-
-  const transferFunds = async (toAddress, amount) => {
-    if (!ethWallet || !account) {
-      alert("Wallet not connected");
-      return;
-    }
-
-    try {
-      const provider = new ethers.providers.Web3Provider(ethWallet);  //Creates a new Web3 provider using an existing Ethereum wallet.
-      const signer = provider.getSigner();  //Retrieves the signer (account) to authorize transactions from the provider.
-      const tx = await signer.sendTransaction({ //Sends the transaction to address, with ether
-        to: toAddress,
-        value: ethers.utils.parseEther(amount),
-      });
+  const pauseContract = async () => {
+    if (atm) {
+      const tx = await atm.pauseContract();
       await tx.wait();
-      console.log("Transaction confirmed:", tx);
-      alert("Transfer successful!");
-    } catch (error) {
-      console.error("Transaction failed:", error);
-      alert("Transfer failed!");
+      setPaused(true);
     }
+  };
+
+  const resumeContract = async () => {
+    if (atm) {
+      const tx = await atm.resumeContract();
+      await tx.wait();
+      setPaused(false);
+    }
+  };
+
+  const getTransactionHistory = async () => {
+    if (atm) {
+      const history = await atm.getTransactionHistory();
+      setTransactionHistory(history);
+    }
+  };
+
+  useEffect(() => {
+    getWallet();
+  }, []);
+
+  useEffect(() => {
+    if (account) {
+      getBalance();
+      getTransactionHistory();
+    }
+  }, [account]);
+
+  const renderTransactionHistory = () => {
+    return transactionHistory.map((tx, index) => (
+      <li key={index} className="mt-2">
+        <p>Type: {tx.transactionType}</p>
+        <p>Amount: {ethers.utils.formatEther(tx.amount)} ETH</p>
+        <p>Timestamp: {new Date(tx.timestamp * 1000).toLocaleString()}</p>
+      </li>
+    ));
   };
 
   const initUser = () => {
-    // Check to see if user has Metamask
     if (!ethWallet) {
-      return <p className=
-      {`${
+      return <p className={`${
         darkMode ? "text-white" : "text-black"
       } text-4xl font-black`}>Please install Metamask in order to use this ATM.</p>;
     }
 
-    // Check to see if user is connected. If not, connect to their account
     if (!account) {
       return (
         <button onClick={connectAccount}>
@@ -136,10 +143,6 @@ export default function HomePage() {
 
     if (balance === undefined) {
       getBalance();
-    }
-
-    if (networkID === null) {
-      checkNetworkId();
     }
 
     return (
@@ -169,6 +172,7 @@ export default function HomePage() {
             <button
               className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-green-600 focus:outline-none"
               onClick={deposit}
+              disabled={paused}
             >
               Deposit
             </button>
@@ -182,6 +186,7 @@ export default function HomePage() {
             <button
               className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-red-600 focus:outline-none"
               onClick={withdraw}
+              disabled={paused}
             >
               Withdraw
             </button>
@@ -190,37 +195,32 @@ export default function HomePage() {
 
         <div className="flex items-center justify-center mt-8">
           <div className="grid grid-cols-2 gap-6 max-w-[500px]">
-            <input
-              type="text"
-              value={recipientAddress}
-              onChange={(e) => setRecipientAddress(e.target.value)}
-              placeholder="Recipient address"
-              className="px-4 py-3 bg-gray-100 rounded-lg shadow-md focus:outline-none"
-            />
-            <input
-              type="number"
-              value={transferAmount}
-              onChange={(e) => setTransferAmount(e.target.value)}
-              placeholder="Enter transfer amount (ETH)"
-              className="px-4 py-3 bg-gray-100 rounded-lg shadow-md focus:outline-none"
-            />
+            <button
+              className="bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-yellow-600 focus:outline-none"
+              onClick={pauseContract}
+              disabled={paused}
+            >
+              Pause Contract
+            </button>
+            <button
+              className="bg-blue-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-600 focus:outline-none"
+              onClick={resumeContract}
+              disabled={!paused}
+            >
+              Resume Contract
+            </button>
           </div>
         </div>
-        <div className="flex items-center justify-center mt-4">
-          <button
-            className="bg-black text-white px-6 py-3 rounded-lg shadow-md focus:outline-none"
-            onClick={() => transferFunds(recipientAddress, transferAmount)}
-          >
-            Transfer Funds
-          </button>
+
+        <div className="mt-8">
+          <h2 className={`text-xl font-bold ${darkMode ? "text-white" : "text-black"}`}>
+            Transaction History
+          </h2>
+          <ul>{renderTransactionHistory()}</ul>
         </div>
       </div>
     );
   };
-
-  useEffect(() => {
-    getWallet();
-  }, []);
 
   return (
     <main
@@ -230,11 +230,7 @@ export default function HomePage() {
           : "from-indigo-500 to-sky-500"
       }`}
     >
-      <header
-        className={`${
-          darkMode ? "text-white" : "text-black"
-        } text-4xl font-black`}
-      >
+      <header className={`${darkMode ? "text-white" : "text-black"} text-4xl font-black`}>
         <h1 className="pt-[50px]">Welcome to Pradyuman's ATM!</h1>
       </header>
       <button
