@@ -10,6 +10,9 @@ Welcome to my Ethereum-based ATM DApp! This little project lets you deposit, wit
 - **Withdraw**: Take some ETH out.
 - **Transfer**: Send ETH to your friends.
 - **Dark Mode**: Because who doesn't love dark mode?
+- **Transaction History**: Logs all deposits and withdrawals, viewable through the front end.
+- **Minimum/Maximum Limits**: Sets minimum and maximum limits for deposit and withdrawal amounts.
+- **Pause Contract**: Allows pausing and resuming of deposits and withdrawals in case of emergencies.
 
 ## How to Run It
 
